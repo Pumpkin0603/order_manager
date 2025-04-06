@@ -64,9 +64,8 @@ def print_order_report(data: List[Dict], title: str = "訂單報表", single: bo
         return
 
     print(f"\n{'='*20} {title} {'='*20}")
-    for idx, order in enumerate(data, 1):
-        if not single:
-            print(f"訂單 #{idx}")
+    for idx, order in enumerate(data, 1):   
+        print(f"訂單 #{idx}")
         print(f"訂單編號: {order['order_id']}")
         print(f"客戶姓名: {order['customer']}")
         print("-" * 50)
@@ -80,10 +79,32 @@ def print_order_report(data: List[Dict], title: str = "訂單報表", single: bo
         print("-" * 50)
         print(f"訂單總額: {total:,}")
         print("=" * 50)
+        print(" ")
+
+def process_order(orders: List[Dict]) -> Tuple[str, Optional[Dict]]:
+
+    if not orders:
+        return ("目前無待處理訂單。", None)
+
+    print("\n======== 待處理訂單列表 ========")
+    for idx, order in enumerate(orders, 1):
+        print(f"{idx}. 訂單編號: {order['order_id']} - 客戶: {order['customer']}")
+    print("================================")
+
+    while True:
+        selection = input("請選擇要出餐的訂單編號 (輸入數字或按 Enter 取消): ").strip()
+        if not selection:
+            return ("=> 取消出餐操作。", None)
+        if not selection.isdigit() or not (1 <= int(selection) <= len(orders)):
+            print("=> 錯誤：請輸入有效的數字。")
+            continue
+        index = int(selection) - 1
+        order = orders.pop(index)
+        return (f" 訂單 {order['order_id']} 已出餐完成\n出餐訂單詳細資料：", order)
 
 def main() -> None:
     _orders = load_data(INPUT_FILE)
-
+    done_orders = load_data(OUTPUT_FILE)
     while True:
         print("***************選單***************")
         print("1. 新增訂單")
@@ -101,7 +122,13 @@ def main() -> None:
         elif choice == "2":
             print_order_report(_orders)
         elif choice == "3":
-            print("出餐處理。")
+            message, processed = process_order(_orders)
+            print(f"=> {message}")
+            if processed:
+                done_orders.append(processed)
+                save_orders(INPUT_FILE, _orders)
+                save_orders(OUTPUT_FILE, done_orders)
+                print_order_report([processed], title="出餐訂單", single=True)
         elif choice == "4":
             print("已離開程式。")
             break
